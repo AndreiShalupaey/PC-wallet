@@ -2,6 +2,7 @@ import socket
 import hashlib
 import uuid
 import datetime
+import os
 
 option = ""
 addres = ""
@@ -30,19 +31,29 @@ while True:
         wallet_config_file.write(addres)
         wallet_config_file.write(str(hash_pass))
         wallet_config_file.close()
+        print("Your addres: " + addres)
         addres = ""
         hash_pass = ""
         salt = ""
         count_coins = 0
     if (option == "2"):
-        config_host_file = open("host_config", "r")
-        host = config_host_file.read()
-        config_host_file.close()
-        port_config_file = open("port_config", "r")
-        port = port_config_file.read()
-        port_config_file.close()
         sock = socket.socket()
-        sock.connect((host, int(port)))
+        with open("host_config", "r") as hosts:
+            hosts_data = hosts.read().splitlines()
+        with open("port_config", "r") as ports:
+            ports_data = ports.read().splitlines()
+        host_i = 0
+        host_i1 = -1
+        while True:
+            if (host_i1 == host_i):
+                break
+            host = hosts_data[host_i]
+            port = ports_data[host_i]
+            try:
+                sock.connect((host, int(port)))
+            except OSError:
+                host_i = host_i + 1
+            host_i1 = host_i1 + 1
         addres = ""
         hash_pass = ""
         salt = ""
@@ -63,7 +74,7 @@ while True:
         salt = ""
         print("Welcome to wallet")
         sock.send('sync '.encode() + addres.encode())
-        count_coins = int(sock.recv(1024).decode())
+        count_coins = float(sock.recv(1024).decode())
         print("Addres: ", addres)
         print("Coins: ", count_coins)
         while True:
@@ -74,24 +85,17 @@ while True:
             if (option2 == "1"):
                 addres_to = input("Input addres recipient: ")
                 cost_to = input("Input count coins: ")
-                if ((int(cost_to) <= int(count_coins)) and (int(cost_to) >= 0)):
-                    sock.send("send ".encode() + addres.encode() + addres_to.encode() + cost_to.encode())
+                commision = input("Input commision: ")
+                if ((float(cost_to) <= float(count_coins)) and (float(cost_to) >= 0)):
+                    sock.send("send ".encode() + addres.encode() + addres_to.encode() + cost_to.encode() + ":".encode() + commision.encode())
             if (option2 == "2"):
                 sock.send("sync ".encode() + addres.encode())
-                count_coins = int(sock.recv(1024).decode())
+                count_coins = float(sock.recv(1024).decode())
                 print("Coins: ", count_coins)
             if (option2 == "3"):
                 break
     if (option == "3"):
-        host = input("input addres of node: ")
-        config_host_file = open("host_config", "w")
-        config_host_file.write(str(host))
-        config_host_file.close()
-        host = ""
-        port_config_file = open("port_config", "w")
-        port = input("Input node port: ")
-        port_config_file.write(str(port))
-        port_config_file.close()
+        print("Write hosts on host_config and port_config")
     if (option == "4"):
         break
 
